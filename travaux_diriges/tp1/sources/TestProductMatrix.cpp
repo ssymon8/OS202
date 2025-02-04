@@ -6,6 +6,9 @@
 #include <chrono>
 #include "Matrix.hpp"
 #include "ProdMatMat.hpp"
+#include <omp.h>
+
+#define BLOCK_SIZE 64
 
 std::tuple<std::vector<double>,std::vector<double>,
 	   std::vector<double>,std::vector<double>>  computeTensors(int dim)
@@ -66,6 +69,7 @@ bool verifProduct(const std::vector < double >&uA, std::vector < double >&vA,
 
 int main(int nargs, char *vargs[])
 {
+
   int dim = 1024;
   if (nargs > 1)
     dim = atoi(vargs[1]);
@@ -77,7 +81,9 @@ int main(int nargs, char *vargs[])
 
   std::chrono::time_point < std::chrono::system_clock > start, end;
   start = std::chrono::system_clock::now();
-  Matrix C = A * B;
+
+  Matrix C = A*B;
+
   end = std::chrono::system_clock::now();
   std::chrono::duration < double >elapsed_seconds = end - start;
 

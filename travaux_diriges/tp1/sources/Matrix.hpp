@@ -12,6 +12,7 @@ public:
   Matrix(const Matrix & A) = delete;
   Matrix(Matrix && A) = default;
   ~Matrix() = default;
+  Matrix get_submatrix(int startRow, int startCol, int blockRows, int blockCols) const;
 
   // Operators
   Matrix & operator =(const Matrix & A) = delete;

@@ -1,0 +1,106 @@
+Q1
+ dim = 1023 on a un temps de calcul de 2.71s
+    MFlpos -> 788.96
+ dim = 1024 7.20s
+    MFlops -> 298.063
+ dim = 1025 2.92s
+    MFlops -> 738.335
+
+explication: c'est un gros problème de cache
+    les nombres sont stockés à la suite dans la ram et la lecture par le cache se fait en puissance de 2 (8 ou 16 par exemple) 
+    et donc pour accéder aux différentes valeurs à la suite on doit faire un "saut de 1024" entre chaque opération.
+    Comme les sauts se font en lisant les 2^n valeurs et que l'adressage dans le cache se fait modulo 2^n 
+    on ne profite de plusieurs lignes de cache car on écrase à la suite les variables stockées dans le cache.
+
+Q2
+On est passé à 3859MFlops
+L'ordre d'accéssion par le cache à dû changer et prendre les valeurs chacunes à la suite au lieu de faire des sauts de 1024
+
+Q3
+On observe d'abord une augmentation des MFlops de façon linéaire puis une baisse d'efficacité qui atteint un plafond de 25000MFlops pour 16 threads utilisés
+Nombre de thread         MFlops
+1                        3660
+2                        7240
+3                        8662
+4                        12341
+5                        12782
+6                        13849
+7                        18700        
+8                        18400
+9                        19600
+10                       20180
+11                       22000
+12                       22340
+13                       22773
+14                       23000
+15                       25900
+16                       24600
+
+Ce plafonnement des performances doit être dû à la capacité du cache processeur (dans mon cas 12Mo de cache) là où les matrices
+calculées sont de dimensions 1024x1024 soit environ 8Mo chacune (matrice de double [écrits sur 8 octets]) ce qui monopolise 24Mo de 
+mémoire sans compter les opérations. Le processeur est donc obligé de faire des demandes d'accès à la RAM qui est beaucoup plus lente que le cache.
+
+D'après la documentation de mon processeur, on peut optimiser en obtenant jusqu'à 4/5 fois plus de vitesse si l'on effectue les calculs 
+exclusivement dans le cache (Cache L3: ~20ns  RAM: ~80ns).
+
+
+Q4
+L'idée serait de partionner les matrices en blocs plus petits afin de calculer par bloc le résultats et que les données soient toutes mises dans le cache sans 
+jamais accéder à la RAM.
+
+Q5
+Pour un cache de 12Mo il faudrait calculer des matrices d'environ 2Mo (des matrices de 512x512) et les stockées ensuite. 
+
+Avec 1 thread utilisé:
+szBlock     MFlops
+32          3502
+64          3979
+128         4175
+256         4098
+512         4700
+
+Il semblerait que ce soit bien plus efficace avec des matrices de taille 512x512
+
+Q6
+On voit qu'en allouant qu'un seul thread le processus est plus lent car on rajoute un étape de création des sous-blocs
+matriciel
+
+Q7
+En parallélisant (2 threads) on constate bien que le plus optimal est d'avoir des blocs de 512
+
+32    6566
+64    6743
+128   7637
+256   7451
+512   8100
+
+Il semblerait qu'on ne puisse pas alloué plus de n threads si n*szBlock > 1024 sous peine d'erreur numérique.
+On va donc paralléliser avec 4 threads et utiliser jusqu'à szBlock =256
+
+32    11575
+64    11630
+128   13022
+256   11548
+
+Pour 8 threads et szblock<= 128
+
+32    15000
+64    15800
+128   18242
+
+Pour 16 threads et szBlock <=64
+
+32    18826
+64    24000
+
+Q8
+blas ne rivalise pas beaucoup plus, cela doit être dû à un problème interne à ma machine puisque chez un collègue 
+blas atteint les 100000MFlops
+
+
+
+
+
+
+
+
