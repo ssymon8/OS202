@@ -1,10 +1,12 @@
 # Calcul de l'ensemble de Mandelbrot en python
 import numpy as np
+from mpi4py import MPI
 from dataclasses import dataclass
 from PIL import Image
 from math import log
 from time import time
 import matplotlib.cm
+import matplotlib.pyplot as plt
 
 
 @dataclass
@@ -48,18 +50,36 @@ class MandelbrotSet:
 
 
 # On peut changer les paramètres des deux prochaines lignes
+def pprint(*args,**kwargs):
+    print(f"[{rank:02d}]",*args,**kwargs)
+
+
 mandelbrot_set = MandelbrotSet(max_iterations=50, escape_radius=10)
 width, height = 1024, 1024
+
+# Initialisation de MPI
+# ---------------------
+comGlobal = MPI.COMM_WORLD.Dup()
+rank      = comGlobal.rank
+nbp       = comGlobal.size
+
+
+#Répartition des tâches
+reste = height %nbp
+NBlock : int = height//nbp + (1 if reste > rank else 0)
+firstBlock: int = NBlock * rank + (reste if (rank>=reste) else 0)
+
+
 
 scaleX = 3./width
 scaleY = 2.25/height
 convergence = np.empty((width, height), dtype=np.double)
 # Calcul de l'ensemble de mandelbrot :
 deb = time()
-for y in range(height):
+for y in range(NBlock):
     for x in range(width):
-        c = complex(-2. + scaleX*x, -1.125 + scaleY * y)
-        convergence[x, y] = mandelbrot_set.convergence(c, smooth=True)
+        c = complex(-2. + scaleX*x, -1.125 + scaleY * (y+rank*NBlock))
+        convergence[x, y+rank*NBlock] = mandelbrot_set.convergence(c, smooth=True)
 fin = time()
 print(f"Temps du calcul de l'ensemble de Mandelbrot : {fin-deb}")
 
