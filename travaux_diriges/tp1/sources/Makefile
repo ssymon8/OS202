@@ -26,6 +26,9 @@ clean:
 calcul_pi.exe: calcul_pi.cpp
 	$(MPICXX) $(CXXFLAGS) $^ -o $@
 
+calcul_pi2.exe: calcul_pi2.cpp
+	$(MPICXX) $(CXXFLAGS) $^ -o $@
+
 jeton.exe: jeton_dans_un_anneau.cpp
 	$(MPICXX) $(CXXFLAGS) $^ -o $@
 
