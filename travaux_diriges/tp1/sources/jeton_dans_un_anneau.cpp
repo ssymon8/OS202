@@ -33,12 +33,7 @@ int main( int nargs, char* argv[] )
         MPI_Send(&jeton, 1, MPI_INT, (rank+1)%nbp, tag, globComm);        
     }
 
-std::cout<< "je suis le rank"<<rank<<"et ma valeur est"<< jeton;
-
-
-	std::stringstream fileName;
-	fileName << "Output" << std::setfill('0') << std::setw(5) << rank << ".txt";
-	std::ofstream output( fileName.str().c_str() );
+	std::cout<< "je suis le rank"<<rank<<"et ma valeur est"<< jeton<<std::endl;
 
 
 
