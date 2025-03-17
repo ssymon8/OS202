@@ -4,6 +4,7 @@
 #include <iostream>
 #include <thread>
 #include <chrono>
+#include <omp.h>
 
 #include "model.hpp"
 #include "display.hpp"
@@ -194,6 +195,10 @@ void display_params(ParamsType const& params)
 
 int main( int nargs, char* args[] )
 {
+    auto start_time = std::chrono::steady_clock::now();
+    double affichage_mean = 0;
+    double avancement_mean = 0;
+
     auto params = parse_arguments(nargs-1, &args[1]);
     display_params(params);
     if (!check_params(params)) return EXIT_FAILURE;
@@ -202,14 +207,32 @@ int main( int nargs, char* args[] )
     auto simu = Model( params.length, params.discretization, params.wind,
                        params.start);
     SDL_Event event;
+    auto avancement_start = std::chrono::steady_clock::now();
     while (simu.update())
     {
-        if ((simu.time_step() & 31) == 0) 
-            std::cout << "Time step " << simu.time_step() << "\n===============" << std::endl;
+        auto avancement_end = std::chrono::steady_clock::now();
+        avancement_mean += std::chrono::duration_cast<std::chrono::milliseconds>(avancement_end - avancement_start).count();
+
+        //if ((simu.time_step() & 31) == 0) 
+            //std::cout << "Time step " << simu.time_step() << "\n===============" << std::endl;
+
+        auto affichage_start = std::chrono::steady_clock::now();
         displayer->update( simu.vegetal_map(), simu.fire_map() );
+        auto affichage_end = std::chrono::steady_clock::now();  
+        affichage_mean += std::chrono::duration_cast<std::chrono::milliseconds>(affichage_end - affichage_start).count();
+        
         if (SDL_PollEvent(&event) && event.type == SDL_QUIT)
             break;
-        std::this_thread::sleep_for(0.1s);
+        //std::this_thread::sleep_for(0.01s);
+        avancement_start = std::chrono::steady_clock::now();
     }
+
+    auto end_time = std::chrono::steady_clock::now();
+    double total_time = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
+    std::cout << "Temps global moyen par itération : " << total_time / double(simu.time_step()) << " ms" << std::endl;
+    std::cout << "Temps d'avancement moyen par itération : " << avancement_mean / double(simu.time_step()) << " ms" << std::endl;
+    std::cout << "Temps d'affichage moyen par itération : " << affichage_mean / double(simu.time_step()) << " ms" << std::endl;
+    std::cout << "Nombre d'itérations : " << double(simu.time_step()) << std::endl;
+
     return EXIT_SUCCESS;
 }
